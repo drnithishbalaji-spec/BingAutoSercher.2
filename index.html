@@ -1,0 +1,274 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Bing Searches</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #2a4122;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        .window-frame {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-glass {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+        }
+
+        .inner-field {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .browser-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .active-safari { background: #2563eb !important; color: white !important; box-shadow: 0 0 15px rgba(37, 99, 235, 0.4); }
+        .active-edge { background: #059669 !important; color: white !important; box-shadow: 0 0 15px rgba(5, 150, 105, 0.4); }
+
+        .btn-start {
+            background: #2563eb;
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .mac-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        input[type="number"] { background: transparent; color: white; outline: none; border: none; text-align: center; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Auth Pin (1045) -->
+    <div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#2a4122]">
+        <div class="panel-glass p-12 text-center max-w-sm w-full">
+            <h2 class="text-xl font-bold mb-6 text-white">System Access</h2>
+            <input type="password" id="pinInput" maxlength="4" placeholder="••••" 
+                class="w-full text-center text-4xl bg-black/30 border border-white/10 p-4 rounded-xl outline-none focus:border-blue-500 text-white">
+            <p class="mt-4 text-[10px] text-white/30 tracking-widest uppercase">Pin: 1045</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden w-full max-w-6xl window-frame p-10 relative">
+        <div class="absolute top-6 left-8 flex">
+            <span class="mac-dot dot-red"></span>
+            <span class="mac-dot dot-yellow"></span>
+            <span class="mac-dot dot-green"></span>
+        </div>
+
+        <div class="flex justify-between items-start mb-10 pl-16">
+            <div>
+                <h1 class="text-4xl font-bold text-white tracking-tight">Automated Bing Searches</h1>
+                <p class="text-sm text-white/40 mt-1">Simulates human interaction to trigger Rewards points correctly.</p>
+            </div>
+            <div class="bg-black/20 rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/5">
+                <span id="idleDot" class="status-dot bg-gray-500"></span>
+                <span id="idleText" class="text-[11px] font-bold text-white/60 uppercase">Idle</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-10">
+            <!-- Controls -->
+            <div class="col-span-12 lg:col-span-6 space-y-8">
+                <div>
+                    <label class="text-[10px] font-extrabold text-white/30 uppercase mb-3 block">Browser</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div id="tabSafari" class="browser-tab py-2.5 text-center text-sm font-semibold text-white/20">Safari</div>
+                        <div id="tabEdge" class="browser-tab py-2.5 text-center text-sm font-semibold text-white/20">Edge</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-extrabold text-white/30 uppercase mb-3 block">Search Count</label>
+                    <div class="inner-field p-8 flex items-center justify-between">
+                        <span class="text-sm text-white/40 font-bold">TOTAL</span>
+                        <input type="number" id="searchLimit" value="20" class="text-6xl font-bold w-32">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="inner-field p-4">
+                        <label class="text-[9px] font-bold text-white/20 uppercase block mb-2">Delay Range</label>
+                        <div class="flex justify-between text-sm">
+                            <input type="number" id="minDelay" value="3.5" step="0.1" class="w-10">
+                            <span class="text-white/10">-</span>
+                            <input type="number" id="maxDelay" value="7.2" step="0.1" class="w-10">
+                        </div>
+                    </div>
+                    <div class="inner-field p-4">
+                        <label class="text-[9px] font-bold text-white/20 uppercase block mb-2">Scroll Time</label>
+                        <div class="flex justify-between text-sm">
+                            <input type="number" value="5.0" class="w-10">
+                            <span class="text-white/10">-</span>
+                            <input type="number" value="10.0" class="w-10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="mainBtn" class="btn-start px-12 py-4 uppercase tracking-widest text-xs">Start Process</button>
+                    <button class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl text-white/40 text-xs uppercase font-bold">Refresh</button>
+                </div>
+            </div>
+
+            <!-- Configuration & Status -->
+            <div class="col-span-12 lg:col-span-6 space-y-8">
+                <div class="panel-glass p-8">
+                    <label class="text-[10px] font-extrabold text-white/30 uppercase mb-4 block">Engine Status</label>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between border-b border-white/5 pb-2">
+                            <span class="text-white/40">Active Link</span>
+                            <span id="activeBrowser" class="text-white font-bold">Detecting...</span>
+                        </div>
+                        <div class="flex justify-between border-b border-white/5 pb-2">
+                            <span class="text-white/40">Point Trigger</span>
+                            <span id="pointStatus" class="text-yellow-500 font-bold uppercase">Ready</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/40">Completed</span>
+                            <span id="progressText" class="text-white font-bold">0 / 20</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-glass p-8 space-y-4">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase">Rewards Tip</h3>
+                    <p class="text-sm text-white/40 leading-relaxed">
+                        To earn points, the search page must stay active. This script now simulates a **5-second interaction delay** after each search to ensure Microsoft registers the point reward.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const words = ["Science", "History", "Weather", "Market", "Nature", "Technology", "Space", "Cooking", "Finance", "News", "Health", "Sports"];
+        let isRunning = false;
+        let count = 0;
+        let automationWindow = null;
+
+        const pinInput = document.getElementById('pinInput');
+        const lockScreen = document.getElementById('lockScreen');
+        const app = document.getElementById('app');
+        const mainBtn = document.getElementById('mainBtn');
+
+        pinInput.oninput = (e) => {
+            if (e.target.value === '1045') {
+                lockScreen.classList.add('hidden');
+                app.classList.remove('hidden');
+                detectBrowser();
+            }
+        };
+
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            const vendor = navigator.vendor;
+            const isEdge = ua.includes("Edg/");
+            const isSafari = vendor.includes("Apple") && ua.includes("Safari") && !ua.includes("Chrome");
+
+            if (isSafari) {
+                document.getElementById('tabSafari').classList.add('active-safari');
+                document.getElementById('activeBrowser').innerText = "SAFARI LINKED";
+            } else if (isEdge) {
+                document.getElementById('tabEdge').classList.add('active-edge');
+                document.getElementById('activeBrowser').innerText = "EDGE LINKED";
+            } else {
+                document.getElementById('activeBrowser').innerText = "UNSUPPORTED";
+            }
+        }
+
+        mainBtn.onclick = () => {
+            if (isRunning) stop();
+            else start();
+        };
+
+        function start() {
+            automationWindow = window.open('https://www.bing.com', 'RewardsAuto', 'width=1000,height=800');
+            if (!automationWindow) {
+                alert("Please enable popups for Safari/Edge.");
+                return;
+            }
+            isRunning = true;
+            count = 0;
+            mainBtn.innerText = "Stop Process";
+            document.getElementById('idleDot').className = "status-dot bg-green-500 animate-pulse";
+            document.getElementById('idleText').innerText = "Running";
+            runLoop();
+        }
+
+        function stop() {
+            isRunning = false;
+            mainBtn.innerText = "Start Process";
+            document.getElementById('idleDot').className = "status-dot bg-gray-500";
+            document.getElementById('idleText').innerText = "Idle";
+            if (automationWindow) automationWindow.close();
+        }
+
+        async function runLoop() {
+            const limit = parseInt(document.getElementById('searchLimit').value);
+            if (!isRunning || count >= limit) {
+                if (count >= limit) stop();
+                return;
+            }
+
+            // 1. Generate query
+            const q = words[Math.floor(Math.random() * words.length)] + " " + Math.floor(Math.random() * 10000);
+            
+            // 2. Perform search
+            if (automationWindow && !automationWindow.closed) {
+                automationWindow.location.href = `https://www.bing.com/search?q=${encodeURIComponent(q)}&FORM=QBRE`;
+            } else {
+                stop();
+                return;
+            }
+
+            // 3. Simulated Human Interaction Delay (Crucial for Points)
+            // Bing often requires the page to be "viewed" for 3-6 seconds
+            const min = parseFloat(document.getElementById('minDelay').value) * 1000;
+            const max = parseFloat(document.getElementById('maxDelay').value) * 1000;
+            const wait = Math.floor(Math.random() * (max - min)) + min;
+            
+            document.getElementById('pointStatus').innerText = "Simulating View...";
+            document.getElementById('pointStatus').className = "text-blue-400 font-bold uppercase";
+
+            await new Promise(r => setTimeout(r, wait));
+
+            count++;
+            document.getElementById('progressText').innerText = `${count} / ${limit}`;
+            document.getElementById('pointStatus').innerText = "Point Triggered";
+            document.getElementById('pointStatus').className = "text-green-500 font-bold uppercase";
+
+            // Brief pause before next search
+            await new Promise(r => setTimeout(r, 1500));
+            runLoop();
+        }
+    </script>
+</body>
+</html>
+
+```
